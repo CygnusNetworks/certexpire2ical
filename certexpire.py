@@ -2,6 +2,7 @@
 
 import argparse
 import datetime
+import fnmatch
 import hashlib
 import os
 import sys
@@ -63,6 +64,7 @@ def main():
 	parser.add_argument('-o', '--output', metavar='FILENAME', type=argparse.FileType("w"), default=sys.stdout, help='store generated ical in given FILENAME instead of stdout')
 	parser.add_argument('-d', '--duration', metavar='DAYS', type=days, default=days(21), help="how much time before expiry should the events trigger")
 	parser.add_argument('-v', '--verbose', action='count', help='increase debug level')
+	parser.add_argument('-p', '--pattern', type=str, default='*.crt', help='when processing directories only consider matching files (default: %(default)s)')
 	args = parser.parse_args()
 
 	log = SysloggingDebugLevel("certexpire", quiet=False, verbosefile=sys.stderr, log_level=args.verbose)
@@ -71,8 +73,13 @@ def main():
 	for fname in args.certificates:
 		if os.path.isdir(fname):
 			log.log_debug("Processing directory %s" % (fname,), 0)
-			for entry in os.listdir(fname):
-				cert2cal.add_cert(os.path.join(fname, entry))
+			for directory, _, filenames in os.walk(fname):
+				for entry in filenames:
+					entry = os.path.join(directory, entry)
+					if not fnmatch.fnmatch(entry, args.pattern):
+						log.log_debug("Skipping file %s not matching %s" % (entry, args.pattern), 3)
+						continue
+					cert2cal.add_cert(os.path.join(directory, entry))
 		else:
 			cert2cal.add_cert(fname)
 
