@@ -12,6 +12,9 @@ import vobject
 
 from cygnuslog.syslogging import SysloggingDebugLevel
 
+class CertNotAdded(Exception):
+	pass
+
 def parsedate(s):
 	if not s.endswith("Z"):
 		raise ValueError("timezone parsing not implemented")
@@ -30,15 +33,21 @@ class Cert2Cal(object):
 
 	def add_cert(self, filename):
 		self.log.log_debug("Processing file %s" % (filename,), 1)
-		with open(filename) as f:
-			content = f.read()
+		try:
+			with open(filename) as f:
+				content = f.read()
+		except IOError as exc:
+			raise CertNotAdded("failed to read %s: %s" % (filename, exc))
 		uid = hashlib.sha256(content).hexdigest()
 		if uid in self.seen:
 			self.log.log_debug("Skipping file %s. Allready processed a different file with hash %s." % (filename, uid), 2)
 			return
 		self.log.log_debug("Computed hash %s fr file %s." % (uid, filename), 3)
 		self.seen.add(uid)
-		x509 = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, content)
+		try:
+			x509 = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, content)
+		except OpenSSL.crypto.Error as err:
+			raise CertNotAdded("failed to parse %s with openssl: %r" % (filename, err))
 		expires = parsedate(x509.get_notAfter())
 		cn = x509.get_subject().commonName
 		self.log.log_debug("Determined common name for %s as %r and expireation as %s." % (filename, cn, expires), 3)
@@ -79,9 +88,15 @@ def main():
 					if not fnmatch.fnmatch(entry, args.pattern):
 						log.log_debug("Skipping file %s not matching %s" % (entry, args.pattern), 3)
 						continue
-					cert2cal.add_cert(os.path.join(directory, entry))
+					try:
+						cert2cal.add_cert(os.path.join(directory, entry))
+					except CertNotAdded as err:
+						log.log_err(str(err))
 		else:
-			cert2cal.add_cert(fname)
+			try:
+				cert2cal.add_cert(fname)
+			except CertNotAdded as err:
+				log.log_err(str(err))
 
 	args.output.write(str(cert2cal))
 
