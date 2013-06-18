@@ -1,5 +1,13 @@
 #!/usr/bin/env python
 
+__author__		= "Helmut Grohne"
+__copyright__	= "Cygnus Networks GmbH"
+__license__		= "proprietary"
+__version__		= "0.1"
+__maintainer__	= "Cygnus Networks GmbH"
+__email__		= "info@cygnusnetworks.de"
+__status__		= "Development"
+
 import argparse
 import datetime
 import fnmatch
