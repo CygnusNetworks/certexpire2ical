@@ -39,6 +39,7 @@ class Cert2Cal(object):
 		self.seen = set()
 		self.trigger_delta = trigger_delta
 		self.log = log
+		self.now = datetime.datetime.now()
 
 	def add_cert(self, filename):
 		self.log.log_debug("Processing file %s" % (filename,), 1)
@@ -59,16 +60,19 @@ class Cert2Cal(object):
 			raise CertNotAdded("failed to parse %s with openssl: %r" % (filename, err))
 		expires = parsedate(x509.get_notAfter())
 		cn = x509.get_subject().commonName
-		self.log.log_debug("Determined common name for %s as %r and expireation as %s." % (filename, cn, expires), 3)
+		self.log.log_debug("Determined common name for %s as %r and expiration as %s." % (filename, cn, expires), 3)
 
-		vev = self.cal.add("vevent")
-		vev.add("uid").value = uid
-		vev.add("summary").value = "Expire certificate %s" % cn
-		vev.add("dtend").value = expires
-		vev.add("dtstart").value = expires
-		alarm = vev.add("valarm")
-		alarm.add("uid").value = "%s-alarm" % uid
-		alarm.add("trigger").value = -self.trigger_delta
+		if expires>self.now:
+			vev = self.cal.add("vevent")
+			vev.add("uid").value = uid
+			vev.add("summary").value = "Expire certificate %s" % cn
+			vev.add("dtend").value = expires
+			vev.add("dtstart").value = expires
+			alarm = vev.add("valarm")
+			alarm.add("uid").value = "%s-alarm" % uid
+			alarm.add("trigger").value = -self.trigger_delta
+		else:
+			self.log.log_debug("Ignoring too old expiration for common name %s" % (cn,),2)
 
 	def __str__(self):
 		return self.cal.serialize()
