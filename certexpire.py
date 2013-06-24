@@ -63,7 +63,7 @@ class Cert2Cal(object):
 
 		vev = self.cal.add("vevent")
 		vev.add("uid").value = uid
-		vev.add("summary").value = "Renew certificate %s" % cn
+		vev.add("summary").value = "Expire certificate %s" % cn
 		vev.add("dtend").value = expires
 		vev.add("dtstart").value = expires
 		alarm = vev.add("valarm")
@@ -80,9 +80,10 @@ def main():
 	parser = argparse.ArgumentParser(description='certificate expiry to ical converter')
 	parser.add_argument('certificates', metavar="CERTIFICATE", type=str, nargs="+", help="file or directory name to process")
 	parser.add_argument('-o', '--output', metavar='FILENAME', type=argparse.FileType("w"), default=sys.stdout, help='store generated ical in given FILENAME instead of stdout')
-	parser.add_argument('-d', '--duration', metavar='DAYS', type=days, default=days(21), help="how much time before expiry should the events trigger")
+	parser.add_argument('-d', '--duration', metavar='DAYS', type=days, default=days(30), help="how much time before expiry should the events trigger")
 	parser.add_argument('-v', '--verbose', action='count', help='increase debug level')
 	parser.add_argument('-p', '--pattern', type=str, default='*.crt', help='when processing directories only consider matching files (default: %(default)s)')
+	parser.add_argument('-s', '--subdir', type=str, default='keys', help='only processing subdirs ending with (default: %(default)s) in path name')
 	args = parser.parse_args()
 
 	log = SysloggingDebugLevel("certexpire", quiet=False, verbosefile=sys.stderr, log_level=args.verbose)
@@ -91,14 +92,19 @@ def main():
 	for fname in args.certificates:
 		if os.path.isdir(fname):
 			log.log_debug("Processing directory %s" % (fname,), 0)
-			for directory, _, filenames in os.walk(fname):
+			for directory, dirpath, filenames in os.walk(fname):
+				log.log_debug("Processing subdir %r" % directory,2)
+				if not directory.endswith("/"+args.subdir):
+					log.log_debug("Subdir %s not found in end of directory path %s. Skipping" % (args.subdir,directory))
+					continue
+				log.log_debug("Processing filenames %r" % filenames,2)
 				for entry in filenames:
-					entry = os.path.join(directory, entry)
+					filename = os.path.join(directory, entry)
 					if not fnmatch.fnmatch(entry, args.pattern):
 						log.log_debug("Skipping file %s not matching %s" % (entry, args.pattern), 3)
 						continue
 					try:
-						cert2cal.add_cert(os.path.join(directory, entry))
+						cert2cal.add_cert(filename)
 					except CertNotAdded as err:
 						log.log_err(str(err))
 		else:
