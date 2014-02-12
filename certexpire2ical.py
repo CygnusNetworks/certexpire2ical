@@ -19,8 +19,6 @@ import sys
 import OpenSSL.crypto
 import vobject
 
-from cygnuslog.syslogging import SysloggingDebugLevel
-
 class CertNotAdded(Exception):
 	pass
 
@@ -29,8 +27,8 @@ def parsedate(s):
 		raise ValueError("timezone parsing not implemented")
 	return datetime.datetime.strptime(s[:-1], "%Y%m%d%H%M%S")
 
-class Cert2Cal(object):
-	def __init__(self, trigger_delta, log):
+class Cert2Cal(object):  # pylint:disable=R0903
+	def __init__(self, trigger_delta):
 		"""
 		@type trigger_delta: datetime.timedelta
 		@param trigger_delta: how much time before expiry should the event trigger?
@@ -38,21 +36,20 @@ class Cert2Cal(object):
 		self.cal = vobject.iCalendar()
 		self.seen = set()
 		self.trigger_delta = trigger_delta
-		self.log = log
 		self.now = datetime.datetime.now()
 
 	def add_cert(self, filename):
-		self.log.log_debug("Processing file %s" % (filename,), 1)
+		#self.log.log_debug("Processing file %s" % (filename,), 1)
 		try:
 			with open(filename) as f:
 				content = f.read()
 		except IOError as exc:
 			raise CertNotAdded("failed to read %s: %s" % (filename, exc))
-		uid = hashlib.sha256(content).hexdigest()
+		uid = hashlib.sha256(content).hexdigest()  # pylint:disable=E1101
 		if uid in self.seen:
-			self.log.log_debug("Skipping file %s. Allready processed a different file with hash %s." % (filename, uid), 2)
+			#self.log.log_debug("Skipping file %s. Allready processed a different file with hash %s." % (filename, uid), 2)
 			return
-		self.log.log_debug("Computed hash %s fr file %s." % (uid, filename), 3)
+		#self.log.log_debug("Computed hash %s fr file %s." % (uid, filename), 3)
 		self.seen.add(uid)
 		try:
 			x509 = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, content)
@@ -60,7 +57,7 @@ class Cert2Cal(object):
 			raise CertNotAdded("failed to parse %s with openssl: %r" % (filename, err))
 		expires = parsedate(x509.get_notAfter())
 		cn = x509.get_subject().commonName
-		self.log.log_debug("Determined common name for %s as %r and expiration as %s." % (filename, cn, expires), 3)
+		#self.log.log_debug("Determined common name for %s as %r and expiration as %s." % (filename, cn, expires), 3)
 
 		if expires>self.now:
 			vev = self.cal.add("vevent")
@@ -72,7 +69,8 @@ class Cert2Cal(object):
 			alarm.add("uid").value = "%s-alarm" % uid
 			alarm.add("trigger").value = -self.trigger_delta
 		else:
-			self.log.log_debug("Ignoring too old expiration for common name %s" % (cn,),2)
+			pass
+			#self.log.log_debug("Ignoring too old expiration for common name %s" % (cn,),2)
 
 	def __str__(self):
 		return self.cal.serialize()
@@ -90,32 +88,32 @@ def main():
 	parser.add_argument('-s', '--subdir', type=str, default='keys', help='only processing subdirs ending with (default: %(default)s) in path name')
 	args = parser.parse_args()
 
-	log = SysloggingDebugLevel("certexpire", quiet=False, verbosefile=sys.stderr, log_level=args.verbose)
+	#log = SysloggingDebugLevel("certexpire", quiet=False, verbosefile=sys.stderr, log_level=args.verbose)
 
-	cert2cal = Cert2Cal(args.duration, log)
+	cert2cal = Cert2Cal(args.duration)
 	for fname in args.certificates:
 		if os.path.isdir(fname):
-			log.log_debug("Processing directory %s" % (fname,), 0)
-			for directory, dirpath, filenames in os.walk(fname):
-				log.log_debug("Processing subdir %r" % directory,2)
+			#log.log_debug("Processing directory %s" % (fname,), 0)
+			for directory, dirpath, filenames in os.walk(fname):  # pylint:disable=W0612
+				#log.log_debug("Processing subdir %r" % directory,2)
 				if not directory.endswith("/"+args.subdir):
-					log.log_debug("Subdir %s not found in end of directory path %s. Skipping" % (args.subdir,directory))
+					#log.log_debug("Subdir %s not found in end of directory path %s. Skipping" % (args.subdir,directory))
 					continue
-				log.log_debug("Processing filenames %r" % filenames,2)
+				#log.log_debug("Processing filenames %r" % filenames,2)
 				for entry in filenames:
 					filename = os.path.join(directory, entry)
 					if not fnmatch.fnmatch(entry, args.pattern):
-						log.log_debug("Skipping file %s not matching %s" % (entry, args.pattern), 3)
+						#log.log_debug("Skipping file %s not matching %s" % (entry, args.pattern), 3)
 						continue
 					try:
 						cert2cal.add_cert(filename)
 					except CertNotAdded as err:
-						log.log_err(str(err))
+						print str(err)
 		else:
 			try:
 				cert2cal.add_cert(fname)
 			except CertNotAdded as err:
-				log.log_err(str(err))
+				print str(err)
 
 	args.output.write(str(cert2cal))
 
