@@ -59,7 +59,8 @@ class Cert2Cal(object):  # pylint:disable=R0903
 		if expires>self.now:
 			vev = self.cal.add("vevent")
 			vev.add("uid").value = uid
-			vev.add("summary").value = "Expire certificate %s" % cn
+                        vev.add("summary").value = "Expire CN:%s" % cn
+                        vev.add("description").value = "Filename %s" % filename
 			vev.add("dtend").value = expires
 			vev.add("dtstart").value = expires
 			alarm = vev.add("valarm")
