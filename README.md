@@ -1,8 +1,6 @@
-certexpire2ical
-===============
+SSL Cert Expiration calendar tool (certexpire2ical)
+===================================================
 
-X.509 SSL Cert Expiration to iCal Tool
+This tool parses single ssl certificates or a complete directory and subdirs and searches for X509 SSL Certificates and extracts certificate expiration times from the ssl certs.
 
-The tool parses single certificates or a complete directory and subdirs and searches for X509 Certificates. All found files are parsed and the expiration date (not after) is extracted.
-
-A Apple Calendar File (ics) is created containing a list of certificate expiry dates including a two alert events n days (n defaults to one and 14 days) before cert expiration.
+As output it create a calendar data file (in ics File format), which can be added to calendar programs (like Apple iCal, iOS or Android calenders) to get a overview and alerts about expiring certificates.
