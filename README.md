@@ -1,13 +1,27 @@
 # certexpire2ical #
 
-## X.509 SSL Cert Expiration to iCal Tool ##
+# SSL Cert Expiration calendar tool (certexpire2ical)
 
-The tool parses single certificates or a complete directory and subdirs and searches for X509 Certificates. All found files are parsed and the expiration date (not after) is extracted.
-
-A Apple Calendar File (ics) is created containing a list of certificate expiry dates including a two alert events n days (n defaults to one and 14 days) before cert expiration.
+This tool parses single ssl certificates or a complete directory and subdirs and searches for X509 SSL Certificates and extracts certificate expiration times from the ssl certs.
+As output it create a calendar data file (in ics File format), which can be added to calendar programs (like Apple iCal, iOS or Android calenders) to get a overview and alerts about expiring certificates.
 
 ## Requirements ##
  
  * Python 3
  * vobject
  * pyOpenSSL
+
+## Examples
+
+Get certificate expiry of one cert in a textfile
+```
+./certexpire2ical.py thawte/SSL123_CA_Bundle.pem.txt                                                                                                                       master↑152| 
+BEGIN:VCALENDAR
+VERSION:2.0
+...
+```
+
+Parse through subdirs and find all crt files and generate a file containing all cert expiry dates.
+```
+find . -name *.crt| xargs ./certexpire2ical.py -v -o all.ics
+```
