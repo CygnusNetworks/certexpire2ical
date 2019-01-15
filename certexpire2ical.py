@@ -94,7 +94,7 @@ def main():
 	for fname in args.certificates:
 		if os.path.isdir(fname):
 			for directory, dirpath, filenames in os.walk(fname):  # pylint:disable=W0612
-				if not directory.endswith("/"+args.subdir):
+				if not directory.endswith("/" + args.subdir):
 					continue
 				for entry in filenames:
 					filename = os.path.join(directory, entry)
