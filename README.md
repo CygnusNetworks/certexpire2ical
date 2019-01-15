@@ -7,6 +7,7 @@ The tool parses single certificates or a complete directory and subdirs and sear
 A Apple Calendar File (ics) is created containing a list of certificate expiry dates including a two alert events n days (n defaults to one and 14 days) before cert expiration.
 
 ## Requirements ##
-
+ 
+ * Python 3
  * vobject
  * pyOpenSSL
