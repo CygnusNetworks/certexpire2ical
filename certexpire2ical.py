@@ -63,11 +63,16 @@ class Cert2Cal(object):  # pylint:disable=R0903
 			vev.add("dtend").value = expires
 			vev.add("dtstart").value = expires
 			alarm = vev.add("valarm")
-			alarm.add("uid").value = "%s-alarm" % uid
-			alarm.add("trigger").value = -self.notify
+			alarm.add("uid").value = "%s-alarm-notify" % uid
+			alarm.add("trigger").value = expires - self.notify
+			alarm.add("action").value = "DISPLAY"
+			alarm.add("description").value = "Notify"
+
 			alarm = vev.add("valarm")
-			alarm.add("uid").value = "%s-alarm" % uid
-			alarm.add("trigger").value = -self.expire
+			alarm.add("uid").value = "%s-alarm-expire" % uid
+			alarm.add("trigger").value = expires - self.expire
+			alarm.add("action").value = "DISPLAY"
+			alarm.add("description").value = "Notify"
 		else:
 			pass
 
@@ -84,7 +89,7 @@ def main():
 	parser.add_argument('certificates', metavar="CERTIFICATE", type=str, nargs="+", help="file or directory name to process")
 	parser.add_argument('-o', '--output', metavar='FILENAME', type=argparse.FileType("w"), default=sys.stdout, help='store generated ical in given FILENAME instead of stdout')
 	parser.add_argument('-n', '--notify', metavar='DAYS', type=days, default=days(14), help="time before first notification should be triggered")
-	parser.add_argument('-e', '--expire', metavar='EXPIRE', type=days, default=days(1), help="time before the second expire notification")
+	parser.add_argument('-e', '--expire', metavar='DAYS', type=days, default=days(1), help="time before second notification should be triggered")
 	parser.add_argument('-v', '--verbose', action='count', help='increase debug level')
 	parser.add_argument('-p', '--pattern', type=str, default='*.crt', help='when processing directories only consider matching files (default: %(default)s)')
 	parser.add_argument('-s', '--subdir', type=str, default='keys', help='only processing subdirs ending with (default: %(default)s) in path name')
